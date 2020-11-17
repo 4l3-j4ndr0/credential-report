@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="report name" pageWidth="612" pageHeight="792" columnWidth="612" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" uuid="90fa117d-07f4-4480-8cca-ab175e5796cd">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="solapin" class="java.lang.String"/>
+	<parameter name="marco" class="java.lang.String"/>
+	<parameter name="foto" class="java.lang.String"/>
+	<field name="nombre" class="java.lang.String"/>
+	<field name="cargo" class="java.lang.String"/>
+	<field name="carnet" class="java.lang.String"/>
+	<field name="pp" class="java.lang.String"/>
+	<detail>
+		<band height="237" splitType="Stretch">
+			<image>
+				<reportElement x="0" y="0" width="612" height="237" uuid="0065e03f-0fd4-4ba7-ae94-119df9733253"/>
+				<imageExpression><![CDATA[$P{solapin}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="31" y="146" width="215" height="20" uuid="042af5bf-5e70-4ef0-9557-661326365f81"/>
+				<textElement verticalAlignment="Bottom"/>
+				<textFieldExpression><![CDATA[$F{cargo}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="347" y="77" width="73" height="20" uuid="6c23a908-b3cf-4be6-9248-fd71b28796cf"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom"/>
+				<textFieldExpression><![CDATA[$F{carnet}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy">
+				<reportElement x="347" y="109" width="113" height="20" uuid="35707a30-c077-4f0b-a00d-63f7d2055072"/>
+				<textElement textAlignment="Center" verticalAlignment="Bottom"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement x="196" y="42" width="85" height="80" uuid="4da1f008-85b5-4b39-b312-49ef4256c0be"/>
+				<imageExpression><![CDATA[$P{marco}]]></imageExpression>
+			</image>
+			<image>
+				<reportElement mode="Transparent" x="201" y="48" width="70" height="70" uuid="c9db32ec-f47c-4b5f-9c6d-d406cabddbb1"/>
+				<imageExpression><![CDATA[$P{foto}]]></imageExpression>
+			</image>
+			<textField>
+				<reportElement x="31" y="110" width="165" height="20" uuid="a0cad1ca-81a3-4967-8657-0139aa7a1b4c"/>
+				<textElement verticalAlignment="Bottom"/>
+				<textFieldExpression><![CDATA[$F{nombre}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="23" splitType="Stretch">
+			<textField>
+				<reportElement x="245" y="0" width="80" height="20" uuid="80f43aac-86ed-4693-9938-e6e070e7a643"/>
+				<textElement textAlignment="Right"/>
+				<textFieldExpression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="325" y="0" width="40" height="20" uuid="0d0b5634-3860-4754-8547-837319e27440"/>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

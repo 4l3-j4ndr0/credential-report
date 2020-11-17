@@ -12,6 +12,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.Principal;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -19,8 +25,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import javax.swing.ImageIcon;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -49,6 +57,8 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.codehaus.groovy.ant.FileScanner;
+import reportes.Clase_solapa_oficial;
 
 /**
  *
@@ -57,9 +67,8 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class visual extends javax.swing.JFrame {
 
     jxl.Workbook libro;
-     private int Vertical_Y;
+    private int Vertical_Y;
     private int Horizontal_X;
-
 
     /**
      * Creates new form visual
@@ -69,21 +78,19 @@ public class visual extends javax.swing.JFrame {
         this.setExtendedState(this.getExtendedState() | JFrame.NORMAL);
         this.setLocationRelativeTo(null);
         DropXlsx dropXlsx = new DropXlsx();
-        dropXlsx.setJtable(jTable1,jScrollPane1,jLabel1);
-         setIconImage(new ImageIcon(getClass().getResource("/imagenes/logo.png")).getImage());
-
+        dropXlsx.setJtable(jTable1, jScrollPane1, jLabel1);
+        setIconImage(new ImageIcon(getClass().getResource("/imagenes/logo.png")).getImage());
+        fotos = new ArrayList<>();
+        ruta_foto.setVisible(false);
     }
 
     //mover el panel
-   
     //mover el panel
-        
-    
-    private void backgroungMousePressed(java.awt.event.MouseEvent evt) {                                        
+    private void backgroungMousePressed(java.awt.event.MouseEvent evt) {
         // TODO add your handling code here:
-        
-    }                          
-    
+
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -95,6 +102,9 @@ public class visual extends javax.swing.JFrame {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        temporal = new javax.swing.JCheckBox();
+        ruta_foto = new javax.swing.JTextField();
+        oficial = new javax.swing.JCheckBox();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
         desarrollador = new javax.swing.JLabel();
@@ -144,7 +154,39 @@ public class visual extends javax.swing.JFrame {
         jTable1.getTableHeader().setReorderingAllowed(false);
         jScrollPane1.setViewportView(jTable1);
 
-        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 113, 790, 320));
+        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 133, 790, 300));
+
+        temporal.setForeground(new java.awt.Color(255, 255, 255));
+        temporal.setText("Temporal");
+        temporal.setBorder(null);
+        temporal.setContentAreaFilled(false);
+        temporal.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        temporal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                temporalActionPerformed(evt);
+            }
+        });
+        getContentPane().add(temporal, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 70, -1, -1));
+
+        ruta_foto.setEditable(false);
+        ruta_foto.setForeground(new java.awt.Color(255, 255, 255));
+        ruta_foto.setText("Ruta de carpeta");
+        ruta_foto.setToolTipText("Direccion de lacarpeta seleccionada");
+        ruta_foto.setBorder(null);
+        ruta_foto.setOpaque(false);
+        getContentPane().add(ruta_foto, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 110, 760, -1));
+
+        oficial.setForeground(new java.awt.Color(255, 255, 255));
+        oficial.setText("Oficial");
+        oficial.setBorder(null);
+        oficial.setContentAreaFilled(false);
+        oficial.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        oficial.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                oficialActionPerformed(evt);
+            }
+        });
+        getContentPane().add(oficial, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 90, -1, -1));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/imagenes/minimizar.png"))); // NOI18N
         jLabel2.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -245,7 +287,7 @@ public class visual extends javax.swing.JFrame {
                 jLabel1MousePressed(evt);
             }
         });
-        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -4, 790, 120));
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, -4, 790, 140));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -260,23 +302,35 @@ public class visual extends javax.swing.JFrame {
                 jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 reporte.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 seleccionar.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
-              //  visual.this.setEnabled(false);
+                //  visual.this.setEnabled(false);
                 //inicio metodo
 
                 if (jTable1.getModel().getValueAt(0, 0) != null) {
-                    crea_reporte_solapin();
-
+                    if (!oficial.isSelected() && !temporal.isSelected()) {
+                        JOptionPane.showMessageDialog(visual.this, "Debe especificar el tipo de solapin a utilizar.", "Reporte Solapin", 0,
+                                new ImageIcon(getClass().getResource("/imagenes/info.png")));
+                    } else {
+                        if (oficial.isSelected()) {
+                            try {
+                                crea_reporte_solapin_oficial();
+                            } catch (IOException ex) {
+                                Logger.getLogger(visual.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        } else {
+                            crea_reporte_solapin();
+                        }
+                    }
                 } else {
                     JOptionPane.showMessageDialog(visual.this, "No hay registros para crear reporte.", "Reporte Solapin", 0,
                             new ImageIcon(getClass().getResource("/imagenes/info.png")));
                 }
 
                 //fin metodo
-              //  visual.this.setEnabled(true);
+                //  visual.this.setEnabled(true);
                 jScrollPane1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
                 jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
                 jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
-                 reporte.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+                reporte.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
                 seleccionar.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
             }
         };
@@ -287,7 +341,7 @@ public class visual extends javax.swing.JFrame {
 
     public void crea_reporte_solapin() {
         try {
-            final String solapin="imagenes/solapa.png";
+            final String solapin = "imagenes/solapa.png";
             int fila = 0;
             List resultados = new ArrayList();
             Clase_reporte_tabla tipo;
@@ -298,38 +352,133 @@ public class visual extends javax.swing.JFrame {
                 tipo = new Clase_reporte_tabla(jTable1.getValueAt(fila, 0).toString(), jTable1.getValueAt(fila, 1).toString(), jTable1.getValueAt(fila, 2).toString());
                 resultados.add(tipo);
             }
-            System.out.println("resultado "+ resultados);
-          //  JOptionPane.showMessageDialog(null, "cargar datos de la tabla OK");
+            System.out.println("resultado " + resultados);
             Map map = new HashMap();
             map.clear();
-            map.put("solapin",  solapin);
-            
+            map.put("solapin", solapin);
+
             JasperPrint jprPrint;
             JDialog reporte = new JDialog();
             reporte.setSize(900, 700);
             reporte.setLocationRelativeTo(null);
             reporte.setTitle("REPORTE SOLAPIN");
             Image icon = new ImageIcon(getClass().getResource("/imagenes/logo.png")).getImage();
-                            reporte.setIconImage(icon);
-         //                   JOptionPane.showMessageDialog(null, "cargar JDIALOG OK");
-             InputStream reporteInputStream = Arrastra_y_suelta.class.getResourceAsStream("/reportes/report_tabla.jasper");
-      //       JOptionPane.showMessageDialog(null, "cargar RUTA DEL REPORTE OK");
-             
+            reporte.setIconImage(icon);
+            InputStream reporteInputStream = Arrastra_y_suelta.class.getResourceAsStream("/reportes/report_tabla.jasper");
+
             jprPrint = JasperFillManager.fillReport(reporteInputStream,
                     map, new JRBeanCollectionDataSource(resultados));
-            
-        //    JOptionPane.showMessageDialog(null, "cargar DATOS EN EL REPORTE OK");
+
             JRViewer jv = new JRViewer(jprPrint);
             reporte.getContentPane().add(jv);
             reporte.setVisible(true);
-      //      JOptionPane.showMessageDialog(null, "MOSTRAR REPORTE CON DATOS OK");
 
         } catch (JRException ex) {
-           JOptionPane.showMessageDialog(null, ex);
-           // Logger.getLogger(Principal.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null, ex);
         }
     }
 
+    public void crea_reporte_solapin_oficial() throws IOException {
+        try {
+            final String solapin = "imagenes/solapin_oficial.png";
+            final String marco = "imagenes/marco.png";
+            
+            int fila = 0;
+            List resultados = new ArrayList();
+            List rutas_fotos = new ArrayList();
+            Clase_solapa_oficial tipo;
+            rutas_fotos.clear();
+            resultados.clear();
+            System.out.println("RUTA "+path_foto(jTable1.getValueAt(6, 2).toString()));
+            //recorrer la tabla
+            for (fila = 0; fila < jTable1.getRowCount(); fila++) {
+                tipo = new Clase_solapa_oficial(jTable1.getValueAt(fila, 0).toString(), jTable1.getValueAt(fila, 1).toString(), jTable1.getValueAt(fila, 2).toString(), path_foto(jTable1.getValueAt(fila, 2).toString()));
+                resultados.add(tipo);
+            }
+
+            Map map = new HashMap();
+            map.clear();
+          //   map.put("foto", foto);
+             map.put("marco", marco);
+            map.put("solapin", solapin);
+            
+           //map.put("foto", rutas_fotos.get(0).toString());
+            JasperPrint jprPrint;
+            JDialog reporte = new JDialog();
+            reporte.setSize(900, 700);
+            reporte.setLocationRelativeTo(null);
+            reporte.setTitle("REPORTE SOLAPIN");
+            Image icon = new ImageIcon(getClass().getResource("/imagenes/logo.png")).getImage();
+            reporte.setIconImage(icon);
+            InputStream reporteInputStream = Arrastra_y_suelta.class.getResourceAsStream("/reportes/solapin_oficial.jasper");
+
+            jprPrint = JasperFillManager.fillReport(reporteInputStream,
+                    map, new JRBeanCollectionDataSource(resultados));
+            
+            JRViewer jv = new JRViewer(jprPrint);
+            reporte.getContentPane().add(jv);
+            reporte.setVisible(true);
+
+        } catch (JRException ex) {
+            JOptionPane.showMessageDialog(null, ex);
+        }
+    }
+
+    public String path_foto(String CI_de_tabla){
+        String result="";
+                for(int fotos=0;fotos<lista_nombre_fotos().size()-1;fotos++){
+                    if(lista_nombre_fotos().get(fotos).toString().equals(CI_de_tabla)){
+                         result=ruta_foto.getText()+"\\"+lista_nombre_fotos().get(fotos).toString()+".jpg";
+                    }
+                }
+        return result;
+    }
+    
+//    public static ArrayList<PersonBean> generateCollection() 
+//    { 
+//     ArrayList<PersonBean> arrlist=new ArrayList<PersonBean>(); 
+//     arrlist.add(new PersonBean("A", 20)); 
+//     arrlist.add(new PersonBean("B",30)); 
+//     arrlist.add(new PersonBean("C",40)); 
+//     arrlist.add(new PersonBean("D",50)); 
+//     arrlist.add(new PersonBean("E",40)); 
+//     arrlist.add(new PersonBean("F",60)); 
+//
+//     return arrlist; 
+//    } 
+    
+    public ArrayList lista_nombre_fotos(){
+        // Aquí la carpeta que queremos explorar   ESTE SI FUNCIONA BIEN, SOLO TENGO Q KITARLE EL .JPG O .PNG
+        String path = ruta_foto.getText();
+
+        String files;
+        File folder = new File(path);
+        File[] listOfFiles = folder.listFiles();
+        ArrayList listado=new ArrayList();
+
+        for (int i = 0; i < listOfFiles.length; i++)
+        {
+
+            if (listOfFiles[i].isFile())
+            {
+                files = listOfFiles[i].getName();
+                if (files.endsWith(".jpg") || files.endsWith(".JPG") )
+                {
+                    if(files.endsWith(".jpg")){
+                  //  System.out.println(files.replace(".jpg", ""));
+                    listado.add(files.replace(".jpg", ""));
+                    }
+                    if(files.endsWith(".JPG")){
+                  //  System.out.println(files.replace(".JPG", ""));
+                    listado.add(files.replace(".JPG", ""));
+                    }
+                }
+            }
+        }
+       // System.out.println("Fin");
+        return listado;
+    }
+    
     private void seleccionarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_seleccionarActionPerformed
         // TODO add your handling code here:
 //        JFileChooser file=new JFileChooser();
@@ -360,153 +509,153 @@ public class visual extends javax.swing.JFrame {
 //    for(int i=0;i<modelo.getRowCount();i++){
 //        modelo.removeRow(i);
 //    }
-Runnable runnable1 = new Runnable() {
+        Runnable runnable1 = new Runnable() {
             public void run() {
                 jScrollPane1.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 reporte.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
                 seleccionar.setCursor(new java.awt.Cursor(java.awt.Cursor.WAIT_CURSOR));
-              //  visual.this.setEnabled(false);
+                //  visual.this.setEnabled(false);
                 //inicio metodo
 
-        JFileChooser fileChooser = new JFileChooser();
-        FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos Excel (*.xlsx)", "xlsx");
-        FileNameExtensionFilter filter2 = new FileNameExtensionFilter("Archivos Excel (*.xls)", "xls");
-        
-        fileChooser.setAcceptAllFileFilterUsed(false);
-        fileChooser.setFileFilter(filter);
-        fileChooser.setFileFilter(filter2);
-        fileChooser.setDialogTitle("BUSCAR ARCHIVO");
-        if (fileChooser.showOpenDialog(visual.this) == JFileChooser.APPROVE_OPTION) {
-            String ruta = fileChooser.getSelectedFile().getAbsolutePath();
-            File f = new File(ruta);
-            if (f.getName().endsWith("xls")) {
-                try {
-                    FileInputStream input = new FileInputStream(ruta);
-                    POIFSFileSystem fs = new POIFSFileSystem(input);
-                    HSSFWorkbook wb = new HSSFWorkbook(fs);
+                JFileChooser fileChooser = new JFileChooser();
+                FileNameExtensionFilter filter = new FileNameExtensionFilter("Archivos Excel (*.xlsx)", "xlsx");
+                FileNameExtensionFilter filter2 = new FileNameExtensionFilter("Archivos Excel (*.xls)", "xls");
 
-                    HSSFSheet sheet = wb.getSheetAt(0);
+                fileChooser.setAcceptAllFileFilterUsed(false);
+                fileChooser.setFileFilter(filter);
+                fileChooser.setFileFilter(filter2);
+                fileChooser.setDialogTitle("BUSCAR ARCHIVO");
+                if (fileChooser.showOpenDialog(visual.this) == JFileChooser.APPROVE_OPTION) {
+                    String ruta = fileChooser.getSelectedFile().getAbsolutePath();
+                    File f = new File(ruta);
+                    if (f.getName().endsWith("xls")) {
+                        try {
+                            FileInputStream input = new FileInputStream(ruta);
+                            POIFSFileSystem fs = new POIFSFileSystem(input);
+                            HSSFWorkbook wb = new HSSFWorkbook(fs);
 
-                    Row row;
-                    String[] datos;
+                            HSSFSheet sheet = wb.getSheetAt(0);
 
-                    int maxCol = 0;
-                    for (int a = 0; a <= sheet.getLastRowNum(); a++) {
-                        if (sheet.getRow(a) != null) {
-                            if (sheet.getRow(a).getLastCellNum() > maxCol) {
-                                maxCol = sheet.getRow(a).getLastCellNum();
-                            }
-                        }
-                    }
-                    if (maxCol > 0) {
-                        while (modelo.getRowCount() != 0) {
-                            modelo.removeRow(0);
-                        }
-                        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
-                            row = sheet.getRow(i);
-                            int cols = row.getPhysicalNumberOfCells();
-                            datos = new String[cols];
+                            Row row;
+                            String[] datos;
 
-                            for (int j = 0; j < cols; j++) {
-                                try {
-                                    datos[j] = row.getCell(j).getStringCellValue();
-                                } catch (Exception e) {
-                                    datos[j] = formatDecimal.format(row.getCell(j).getNumericCellValue());
+                            int maxCol = 0;
+                            for (int a = 0; a <= sheet.getLastRowNum(); a++) {
+                                if (sheet.getRow(a) != null) {
+                                    if (sheet.getRow(a).getLastCellNum() > maxCol) {
+                                        maxCol = sheet.getRow(a).getLastCellNum();
+                                    }
                                 }
                             }
+                            if (maxCol > 0) {
+                                while (modelo.getRowCount() != 0) {
+                                    modelo.removeRow(0);
+                                }
+                                for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+                                    row = sheet.getRow(i);
+                                    int cols = row.getPhysicalNumberOfCells();
+                                    datos = new String[cols];
+
+                                    for (int j = 0; j < cols; j++) {
+                                        try {
+                                            datos[j] = row.getCell(j).getStringCellValue();
+                                        } catch (Exception e) {
+                                            datos[j] = formatDecimal.format(row.getCell(j).getNumericCellValue());
+                                        }
+                                    }
 //                if (i == 0) {
 //                    modelo.setColumnIdentifiers(datos);
 //                } else {
 //                    modelo.addRow(datos);
 //                }
-                            modelo.addRow(datos);
-                        }
-                        jTable1.setModel(modelo);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Nada que importar", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (Exception e) {
-                    System.out.println("general " + e);
-                }
-            } else {
-                try {
-                    XSSFWorkbook wb = new XSSFWorkbook(new FileInputStream(f));
-                    XSSFSheet sheet = wb.getSheetAt(0);//primeta hoja            
-                    Row row;
-                    Cell cell;
-
-                    //obtiene cantidad total de columnas con contenido
-                    int maxCol = 0;
-                    for (int a = 0; a <= sheet.getLastRowNum(); a++) {
-                        if (sheet.getRow(a) != null) {
-                            if (sheet.getRow(a).getLastCellNum() > maxCol) {
-                                maxCol = sheet.getRow(a).getLastCellNum();
+                                    modelo.addRow(datos);
+                                }
+                                jTable1.setModel(modelo);
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Nada que importar", "Error", JOptionPane.ERROR_MESSAGE);
                             }
+                        } catch (Exception e) {
+                            System.out.println("general " + e);
                         }
-                    }
-                    if (maxCol > 0) {
-                        //Añade encabezado a la tabla
+                    } else {
+                        try {
+                            XSSFWorkbook wb = new XSSFWorkbook(new FileInputStream(f));
+                            XSSFSheet sheet = wb.getSheetAt(0);//primeta hoja            
+                            Row row;
+                            Cell cell;
+
+                            //obtiene cantidad total de columnas con contenido
+                            int maxCol = 0;
+                            for (int a = 0; a <= sheet.getLastRowNum(); a++) {
+                                if (sheet.getRow(a) != null) {
+                                    if (sheet.getRow(a).getLastCellNum() > maxCol) {
+                                        maxCol = sheet.getRow(a).getLastCellNum();
+                                    }
+                                }
+                            }
+                            if (maxCol > 0) {
+                                //Añade encabezado a la tabla
 //                for (int i = 1; i <= maxCol; i++) {
 //                    modelo.addColumn("Col." + i);
 //                }                
-                        while (modelo.getRowCount() != 0) {
-                            modelo.removeRow(0);
-                        }
-                        //recorre fila por fila
-                        Iterator<Row> rowIterator = sheet.iterator();
-                        while (rowIterator.hasNext()) {
-
-                            int index = 0;
-                            row = rowIterator.next();
-
-                            Object[] obj = new Object[row.getLastCellNum()];
-                            Iterator<Cell> cellIterator = row.cellIterator();
-
-                            while (cellIterator.hasNext()) {
-                                cell = cellIterator.next();
-                                //contenido para celdas vacias
-                                while (index < cell.getColumnIndex()) {
-                                    obj[index] = "";
-                                    index += 1;
+                                while (modelo.getRowCount() != 0) {
+                                    modelo.removeRow(0);
                                 }
-                                //extrae contenido de archivo excel
-                                switch (cell.getCellType()) {
-                                    case Cell.CELL_TYPE_BOOLEAN:
-                                        obj[index] = cell.getBooleanCellValue();
-                                        break;
-                                    case Cell.CELL_TYPE_NUMERIC:
-                                        obj[index] = formatDecimal.format(cell.getNumericCellValue());
-                                        break;
-                                    case Cell.CELL_TYPE_STRING:
-                                        obj[index] = cell.getStringCellValue();
-                                        break;
-                                    case Cell.CELL_TYPE_BLANK:
-                                        obj[index] = " ";
-                                        break;
-                                    case Cell.CELL_TYPE_FORMULA:
-                                        obj[index] = cell.getCellFormula();
-                                        break;
-                                    default:
-                                        obj[index] = "";
-                                        break;
+                                //recorre fila por fila
+                                Iterator<Row> rowIterator = sheet.iterator();
+                                while (rowIterator.hasNext()) {
+
+                                    int index = 0;
+                                    row = rowIterator.next();
+
+                                    Object[] obj = new Object[row.getLastCellNum()];
+                                    Iterator<Cell> cellIterator = row.cellIterator();
+
+                                    while (cellIterator.hasNext()) {
+                                        cell = cellIterator.next();
+                                        //contenido para celdas vacias
+                                        while (index < cell.getColumnIndex()) {
+                                            obj[index] = "";
+                                            index += 1;
+                                        }
+                                        //extrae contenido de archivo excel
+                                        switch (cell.getCellType()) {
+                                            case Cell.CELL_TYPE_BOOLEAN:
+                                                obj[index] = cell.getBooleanCellValue();
+                                                break;
+                                            case Cell.CELL_TYPE_NUMERIC:
+                                                obj[index] = formatDecimal.format(cell.getNumericCellValue());
+                                                break;
+                                            case Cell.CELL_TYPE_STRING:
+                                                obj[index] = cell.getStringCellValue();
+                                                break;
+                                            case Cell.CELL_TYPE_BLANK:
+                                                obj[index] = " ";
+                                                break;
+                                            case Cell.CELL_TYPE_FORMULA:
+                                                obj[index] = cell.getCellFormula();
+                                                break;
+                                            default:
+                                                obj[index] = "";
+                                                break;
+                                        }
+                                        index += 1;
+                                    }
+                                    modelo.addRow(obj);
                                 }
-                                index += 1;
+                                //    modelo.setModel(modelo);
+                            } else {
+                                JOptionPane.showMessageDialog(null, "Nada que importar", "Error", JOptionPane.ERROR_MESSAGE);
                             }
-                            modelo.addRow(obj);
+                        } catch (IOException ex) {
+                            System.err.println("" + ex.getMessage());
                         }
-                        //    modelo.setModel(modelo);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Nada que importar", "Error", JOptionPane.ERROR_MESSAGE);
                     }
-                } catch (IOException ex) {
-                    System.err.println("" + ex.getMessage());
                 }
-            }
-        }
-        //fin metodo
-              //  visual.this.setEnabled(true);
+                //fin metodo
+                //  visual.this.setEnabled(true);
                 jScrollPane1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
                 jTable1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
                 jLabel1.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
@@ -517,7 +666,7 @@ Runnable runnable1 = new Runnable() {
         Thread t1 = new Thread(runnable1);
         t1.start();
 
-        
+
     }//GEN-LAST:event_seleccionarActionPerformed
 //#################### mover panel ################################################################
     private void jLabel1MouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseDragged
@@ -526,7 +675,7 @@ Runnable runnable1 = new Runnable() {
         } else {
             setLocation(evt.getXOnScreen() - Horizontal_X, evt.getYOnScreen() - Vertical_Y);
             if (evt.getYOnScreen() == 0) {
-               // Maximizar();
+                // Maximizar();
             }
         }
     }//GEN-LAST:event_jLabel1MouseDragged
@@ -538,20 +687,20 @@ Runnable runnable1 = new Runnable() {
     }//GEN-LAST:event_jLabel1MousePressed
 
     //######################################################################################################
-    
+
     private void desarrolladorMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_desarrolladorMouseEntered
         // TODO add your handling code here:
-         desarrollador.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187,187,187)));
+        desarrollador.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187, 187, 187)));
     }//GEN-LAST:event_desarrolladorMouseEntered
 
     private void desarrolladorMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_desarrolladorMouseExited
         // TODO add your handling code here:
-         desarrollador.setBorder(null);
+        desarrollador.setBorder(null);
     }//GEN-LAST:event_desarrolladorMouseExited
 
     private void jLabel3MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseEntered
         // TODO add your handling code here:
-        jLabel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187,187,187)));
+        jLabel3.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187, 187, 187)));
     }//GEN-LAST:event_jLabel3MouseEntered
 
     private void jLabel3MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseExited
@@ -561,7 +710,7 @@ Runnable runnable1 = new Runnable() {
 
     private void jLabel2MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel2MouseEntered
         // TODO add your handling code here:
-        jLabel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187,187,187)));
+        jLabel2.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(187, 187, 187)));
     }//GEN-LAST:event_jLabel2MouseEntered
 
     private void jLabel2MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel2MouseExited
@@ -576,19 +725,166 @@ Runnable runnable1 = new Runnable() {
 
     private void jLabel3MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel3MouseClicked
         // TODO add your handling code here:
-        if(JOptionPane.showConfirmDialog(this, "Esta a punto de cerrar la aplicación.\n¿Desea continuar?", "Credential Report", JOptionPane.YES_NO_OPTION, 0,
-                        new ImageIcon(getClass().getResource("/imagenes/seguro.png"))) == JOptionPane.YES_OPTION){
+        if (JOptionPane.showConfirmDialog(this, "Esta a punto de cerrar la aplicación.\n¿Desea continuar?", "Credential Report", JOptionPane.YES_NO_OPTION, 0,
+                new ImageIcon(getClass().getResource("/imagenes/seguro.png"))) == JOptionPane.YES_OPTION) {
             System.exit(0);
         }
-        
-        
+
+
     }//GEN-LAST:event_jLabel3MouseClicked
 
     private void desarrolladorMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_desarrolladorMouseClicked
         // TODO add your handling code here:
-        desarrollador d=new desarrollador();
+        desarrollador d = new desarrollador();
         d.show();
     }//GEN-LAST:event_desarrolladorMouseClicked
+
+    public void buscarHijos(File file) throws IOException, InterruptedException {
+        file = fileChooser.getSelectedFile();
+        if (file.listFiles().length == 0 || file.listFiles() == null) {
+            System.out.println("vacio");
+        } else {
+            final Path rootDir = Paths.get(file.getAbsolutePath(), new String[0]);
+            Files.walkFileTree(rootDir, new FileVisitor<Path>() {
+                private Pattern pattern = Pattern.compile("^(.*?)");
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes atts) throws IOException {
+                    boolean matches = this.pattern.matcher(path.toString()).matches();
+                    return matches ? FileVisitResult.CONTINUE : FileVisitResult.SKIP_SUBTREE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path path, BasicFileAttributes mainAtts) throws IOException {
+
+                    boolean matches = (path.toFile().getName().endsWith(".jpg") || path.toFile().getName().endsWith(".png"));
+                    if (matches) {
+                        fotos.add(path.toFile());
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path path, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path path, IOException exc) throws IOException {
+                    exc.getMessage();
+                    return path.equals(rootDir) ? FileVisitResult.TERMINATE : FileVisitResult.CONTINUE;
+                }
+
+            });
+        }
+    }
+
+    private JFileChooser fileChooser;
+    private ArrayList<File> fotos;
+    private File carpeta;
+    private void oficialActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_oficialActionPerformed
+        // TODO add your handling code here:
+        if (oficial.isSelected()) {
+            temporal.setSelected(false);
+        }
+        ruta_foto.setVisible(true);
+        fileChooser = new JFileChooser(this.ruta_foto.getText());
+        fileChooser.setMultiSelectionEnabled(false);
+        fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        fileChooser.setAcceptAllFileFilterUsed(false);
+        fileChooser.setDialogTitle("Seleccione las imagenes");
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("*.JPG", new String[]{"JPG"});
+        fileChooser.setFileFilter(filter);
+        int selection = fileChooser.showOpenDialog(this);
+        fotos.clear();
+        switch (selection) {
+            case 0:
+                if (fileChooser.getSelectedFile().isDirectory()) {
+                    try {
+                        buscarHijos(carpeta);
+                    } catch (IOException | InterruptedException ex) {
+                        Logger.getLogger(visual.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    if (fotos.isEmpty()) {
+                        ruta_foto.setText(fileChooser.getSelectedFile().getPath());
+                    } else {
+                        JOptionPane.showMessageDialog(null, "La carpeta seleccionada no contiene imagenes válidas", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                } else {
+                    fotos.add(fileChooser.getSelectedFile());
+                    ruta_foto.setText(fileChooser.getSelectedFile().getAbsolutePath());
+                    //   jTextField1.setText(fileChooser.getSelectedFile().getParent());
+                }
+                break;
+            case JFileChooser.CANCEL_OPTION:
+                ruta_foto.setVisible(false);
+                oficial.setSelected(false);
+                System.out.println("No se han seleccionado archivos");
+                break;
+            case JFileChooser.ERROR:
+                System.err.println("Error seleccionando archivos");
+                break;
+        }
+    }//GEN-LAST:event_oficialActionPerformed
+
+    public String buscar(String argFichero, File argFile) {
+        String ruta="";
+        File[] lista = argFile.listFiles();
+
+        if (lista != null) {
+
+            for (File elemento : lista) {
+
+                if (elemento.isDirectory()) {
+
+                    buscar(argFichero, elemento);
+
+                } else if (argFichero.equalsIgnoreCase(elemento.getName())) {
+
+                    ruta=elemento.getParentFile().toString();
+
+                }
+
+            }
+
+        }
+        return ruta;
+
+    }
+
+    public void  dame_ruta() {
+        String ruta="";
+
+        Scanner entrada = new Scanner(System.in);
+
+        String fichero = "";
+
+        String directorio = "";
+
+        System.out.print("Ingrese el nombre del fichero:\nfichero = ");
+
+        fichero = entrada.next();
+
+        System.out.print("\nDirectorio de inicio de la busqueda:\ndirectorio = ");
+
+        directorio = entrada.next();
+
+        System.out.println();
+
+        buscar(fichero, new File(directorio));
+        
+    }
+
+    private void temporalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_temporalActionPerformed
+        // TODO add your handling code here:
+        if (temporal.isSelected()) {
+            oficial.setSelected(false);
+            ruta_foto.setText("");
+            ruta_foto.setVisible(false);
+        }
+    }//GEN-LAST:event_temporalActionPerformed
 
     public void cargarArchivo() {
         Sheet hoja1 = libro.getSheet(0);
@@ -652,7 +948,10 @@ Runnable runnable1 = new Runnable() {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
+    private javax.swing.JCheckBox oficial;
     private javax.swing.JButton reporte;
+    private javax.swing.JTextField ruta_foto;
     private javax.swing.JButton seleccionar;
+    private javax.swing.JCheckBox temporal;
     // End of variables declaration//GEN-END:variables
 }
